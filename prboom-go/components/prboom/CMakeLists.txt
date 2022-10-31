@@ -9,7 +9,6 @@ register_component()
 
 rg_setup_compile_options(
     -Wno-missing-field-initializers
-    -mfix-esp32-psram-cache-issue
     -DHAVE_CONFIG_H
     -O2
 )

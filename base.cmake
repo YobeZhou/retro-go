@@ -13,6 +13,7 @@ macro(rg_setup_compile_options)
     message("Target: ${RG_TARGET}")
 
     component_compile_options(
+        -mfix-esp32-psram-cache-issue
         -DRG_REPLACE_PRINTF_FUNCTIONS
         -D${RG_TARGET}
         -DRETRO_GO
