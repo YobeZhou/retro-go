@@ -62,19 +62,22 @@ static inline uint32_t gamepad_read(void)
     #endif
 
 #elif RG_GAMEPAD_DRIVER == 2  // Serial
-    gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 0);
-    usleep(5);
     gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 1);
-    usleep(1);
+    rg_task_delay(5);
+    gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 0);
+    rg_task_delay(5);
 
     for (int i = 0; i < 8; i++) {
-	int pinValue = gpio_get_level(RG_GPIO_GAMEPAD_DATA);
-	state |= pinValue << (7 - i);
+        //int pinValue = gpio_get_level(RG_GPIO_GAMEPAD_DATA);
+        //state |= pinValue << (7 - i);
+        if (gpio_get_level(RG_GPIO_GAMEPAD_DATA) == 0){
+            state |= (1 << i);
+        }
 
-	gpio_set_level(RG_GPIO_GAMEPAD_CLOCK, 0);
-	usleep(1);
-	gpio_set_level(RG_GPIO_GAMEPAD_CLOCK, 1);
-	usleep(1);
+        gpio_set_level(RG_GPIO_GAMEPAD_CLOCK, 1);
+        rg_task_delay(5);
+        gpio_set_level(RG_GPIO_GAMEPAD_CLOCK, 0);
+        rg_task_delay(5);
     }
 
     #ifdef RG_GPIO_GAMEPAD_MENU
@@ -225,12 +228,15 @@ void rg_input_init(void)
 
     const char *driver = "SERIAL";
 
+    gpio_reset_pin(RG_GPIO_GAMEPAD_CLOCK);
+    gpio_reset_pin(RG_GPIO_GAMEPAD_LATCH);
+    gpio_reset_pin(RG_GPIO_GAMEPAD_DATA);
     gpio_set_direction(RG_GPIO_GAMEPAD_CLOCK, GPIO_MODE_OUTPUT);
     gpio_set_direction(RG_GPIO_GAMEPAD_LATCH, GPIO_MODE_OUTPUT);
     gpio_set_direction(RG_GPIO_GAMEPAD_DATA, GPIO_MODE_INPUT);
 
-    gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 0);
-    gpio_set_level(RG_GPIO_GAMEPAD_CLOCK, 1);
+    //gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 0);
+    //gpio_set_level(RG_GPIO_GAMEPAD_CLOCK, 1);
 
     #ifdef RG_GPIO_GAMEPAD_MENU
     gpio_set_direction(RG_GPIO_GAMEPAD_MENU, GPIO_MODE_INPUT);
