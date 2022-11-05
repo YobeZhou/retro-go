@@ -11,7 +11,7 @@
 
 // Audio
 #define RG_AUDIO_USE_INT_DAC        0   // 0 = Disable, 1 = GPIO25, 2 = GPIO26, 3 = Both
-#define RG_AUDIO_USE_EXT_DAC        1   // 0 = Disable, 1 = Enable
+#define RG_AUDIO_USE_EXT_DAC        0   // 0 = Disable, 1 = Enable
 
 // Video
 #define RG_SCREEN_DRIVER            5   // 0 = ILI9341
@@ -27,23 +27,35 @@
 #define RG_SCREEN_MARGIN_RIGHT      0
 
 // Input
-#define RG_GAMEPAD_DRIVER           2   // 1 = ODROID-GO, 2 = Serial, 3 = I2C
+#define RG_GAMEPAD_DRIVER           3   // 1 = ODROID-GO, 2 = Serial, 3 = I2C
 #define RG_GAMEPAD_HAS_MENU_BTN     1
 #define RG_GAMEPAD_HAS_OPTION_BTN   1
 // Note: Depending on the driver, the button map can represent bits, registers, keys, or gpios.
-#if 0 // 100ask
-#define RG_GAMEPAD_MAP_A            (1<<0)
-#define RG_GAMEPAD_MAP_B            (1<<1)
-#define RG_GAMEPAD_MAP_START        (1<<2)
-#define RG_GAMEPAD_MAP_MENU         (1<<3)
-#define RG_GAMEPAD_MAP_UP           (1<<4)
-#define RG_GAMEPAD_MAP_DOWN         (1<<5)
-#define RG_GAMEPAD_MAP_LEFT         (1<<6)
-#define RG_GAMEPAD_MAP_RIGHT        (1<<7)
-#define RG_GAMEPAD_MAP_SELECT       (1<<8)
-#define RG_GAMEPAD_MAP_OPTION       (1<<9)
-#define RG_GAMEPAD_MAP_X            (1<<10)
-#define RG_GAMEPAD_MAP_Y            (1<<11)
+#if (RG_GAMEPAD_DRIVER == 3)    // 100ask PCA9555A
+    #define RG_GAMEPAD_MAP_UP           (1<<0)
+    #define RG_GAMEPAD_MAP_DOWN         (1<<1)
+    #define RG_GAMEPAD_MAP_LEFT         (1<<2)
+    #define RG_GAMEPAD_MAP_RIGHT        (1<<3)
+    #define RG_GAMEPAD_MAP_A            (1<<4)
+    #define RG_GAMEPAD_MAP_B            (1<<5)
+    #define RG_GAMEPAD_MAP_X            (1<<6)
+    #define RG_GAMEPAD_MAP_Y            (1<<7)
+    #define RG_GAMEPAD_MAP_START        (1<<8)
+    #define RG_GAMEPAD_MAP_SELECT       (1<<9)
+    #define RG_GAMEPAD_MAP_MENU         (1<<10)
+    #define RG_GAMEPAD_MAP_OPTION       (1<<11)
+#elif (RG_GAMEPAD_DRIVER == 2)  // 100ask fc joypad
+    #define RG_GAMEPAD_MAP_A            (1<<0)
+    #define RG_GAMEPAD_MAP_B            (1<<1)
+    #define RG_GAMEPAD_MAP_SELECT       (1<<2)
+    //#define RG_GAMEPAD_MAP_START        (1<<3)
+    #define RG_GAMEPAD_MAP_MENU         (1<<3)
+    #define RG_GAMEPAD_MAP_UP           (1<<4)
+    #define RG_GAMEPAD_MAP_DOWN         (1<<5)
+    #define RG_GAMEPAD_MAP_LEFT         (1<<6)
+    #define RG_GAMEPAD_MAP_RIGHT        (1<<7)
+    //#define RG_GAMEPAD_MAP_MENU         (1<<8)
+    //#define RG_GAMEPAD_MAP_OPTION       (1<<11)
 #endif
 
 
@@ -56,8 +68,8 @@
 #define RG_GPIO_LED                 GPIO_NUM_38
 
 // I2C BUS
-//#define RG_GPIO_I2C_SDA             GPIO_NUM_47
-//#define RG_GPIO_I2C_SCL             GPIO_NUM_48
+#define RG_GPIO_I2C_SDA             GPIO_NUM_2
+#define RG_GPIO_I2C_SCL             GPIO_NUM_3
 
 // Built-in gamepad
 //#define RG_GPIO_GAMEPAD_L           GPIO_NUM_40
@@ -90,7 +102,7 @@
 #define RG_GPIO_SDSPI_CS            GPIO_NUM_15
 
 // External I2S DAC
-#define RG_GPIO_SND_I2S_BCK         GPIO_NUM_1
-#define RG_GPIO_SND_I2S_WS          GPIO_NUM_2
-#define RG_GPIO_SND_I2S_DATA        GPIO_NUM_3
-#define RG_GPIO_SND_AMP_ENABLE      GPIO_NUM_9
+//#define RG_GPIO_SND_I2S_BCK         GPIO_NUM_1
+//#define RG_GPIO_SND_I2S_WS          GPIO_NUM_2
+//#define RG_GPIO_SND_I2S_DATA        GPIO_NUM_3
+//#define RG_GPIO_SND_AMP_ENABLE      GPIO_NUM_9

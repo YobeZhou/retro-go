@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#if 0
 typedef enum
 {
     RG_KEY_UP      = (1 << 0),
@@ -22,27 +21,6 @@ typedef enum
     RG_KEY_ALL     = 0xFFFF,
     RG_KEY_COUNT   = 12,
 } rg_key_t;
-#else
-typedef enum
-{
-    RG_KEY_A      = (1 << 0),
-    RG_KEY_B   = (1 << 1),
-    RG_KEY_START   = (1 << 2),
-    RG_KEY_MENU    = (1 << 3),
-    RG_KEY_UP  = (1 << 4),
-    RG_KEY_DOWN    = (1 << 5),
-    RG_KEY_LEFT    = (1 << 6),
-    RG_KEY_RIGHT       = (1 << 7),
-    //RG_KEY_MENU    = (1 << 8),
-    RG_KEY_SELECT  = (1 << 8),
-    RG_KEY_OPTION  = (1 << 9),
-    RG_KEY_X       = (1 << 10),
-    RG_KEY_Y       = (1 << 11),
-    RG_KEY_ANY     = 0xFFFF,
-    RG_KEY_ALL     = 0xFFFF,
-    RG_KEY_COUNT   = 12,
-} rg_key_t;
-#endif
 
 void rg_input_init(void);
 void rg_input_deinit(void);
