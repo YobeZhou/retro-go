@@ -48,7 +48,7 @@
 #endif
 
 #ifndef RG_BUILD_USER
-#define RG_BUILD_USER "ducalex"
+#define RG_BUILD_USER "100ask"
 #endif
 
 #ifndef RG_RECOVERY_BTN
