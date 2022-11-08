@@ -11,7 +11,7 @@
 
 // Audio
 #define RG_AUDIO_USE_INT_DAC        0   // 0 = Disable, 1 = GPIO25, 2 = GPIO26, 3 = Both
-#define RG_AUDIO_USE_EXT_DAC        0   // 0 = Disable, 1 = Enable
+#define RG_AUDIO_USE_EXT_DAC        1   // 0 = Disable, 1 = Enable
 
 // Video
 #define RG_SCREEN_DRIVER            5   // 0 = ILI9341
@@ -60,7 +60,7 @@
 
 
 // Battery
-#define RG_BATTERY_ADC_CHANNEL      ADC1_CHANNEL_4
+#define RG_BATTERY_ADC_CHANNEL      ADC1_CHANNEL_1
 #define RG_BATTERY_CALC_PERCENT(raw) (((raw) * 2.f - 3500.f) / (4200.f - 3500.f) * 100.f)
 #define RG_BATTERY_CALC_VOLTAGE(raw) ((raw) * 2.f * 0.001f)
 
@@ -68,8 +68,8 @@
 #define RG_GPIO_LED                 GPIO_NUM_38
 
 // I2C BUS
-#define RG_GPIO_I2C_SDA             GPIO_NUM_2
-#define RG_GPIO_I2C_SCL             GPIO_NUM_3
+#define RG_GPIO_I2C_SDA             GPIO_NUM_40
+#define RG_GPIO_I2C_SCL             GPIO_NUM_41
 
 // Built-in gamepad
 //#define RG_GPIO_GAMEPAD_L           GPIO_NUM_40
@@ -102,7 +102,7 @@
 #define RG_GPIO_SDSPI_CS            GPIO_NUM_15
 
 // External I2S DAC
-//#define RG_GPIO_SND_I2S_BCK         GPIO_NUM_1
-//#define RG_GPIO_SND_I2S_WS          GPIO_NUM_2
-//#define RG_GPIO_SND_I2S_DATA        GPIO_NUM_3
+#define RG_GPIO_SND_I2S_BCK         GPIO_NUM_2
+#define RG_GPIO_SND_I2S_WS          GPIO_NUM_3
+#define RG_GPIO_SND_I2S_DATA        GPIO_NUM_4
 //#define RG_GPIO_SND_AMP_ENABLE      GPIO_NUM_9
