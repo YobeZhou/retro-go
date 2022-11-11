@@ -9,6 +9,9 @@
 #define RG_STORAGE_SPEED            SDMMC_FREQ_DEFAULT  // Used by driver 1 and 2
 #define RG_STORAGE_ROOT             "/sd"               // Storage mount point
 
+// network
+#define RG_ENABLE_NETWORKING        1   // 0 = Disable, 1 = Enable
+
 // Audio
 #define RG_AUDIO_USE_INT_DAC        0   // 0 = Disable, 1 = GPIO25, 2 = GPIO26, 3 = Both
 #define RG_AUDIO_USE_EXT_DAC        1   // 0 = Disable, 1 = Enable
