@@ -31,7 +31,9 @@
 #endif
 
 static const rg_audio_sink_t sinks[] = {
+#if !RG_AUDIO_USE_INT_DAC && !RG_AUDIO_USE_EXT_DAC
     {RG_AUDIO_SINK_DUMMY,   0, "Dummy"  },
+#endif
 #if RG_AUDIO_USE_INT_DAC
     {RG_AUDIO_SINK_I2S_DAC, 0, "Speaker"},
 #endif
@@ -77,7 +79,7 @@ void rg_audio_init(int sampleRate)
 
     ACQUIRE_DEVICE(1000);
 
-    int sinkType = (int)rg_settings_get_number(NS_GLOBAL, SETTING_OUTPUT, sinks[RG_COUNT(sinks) > 1 ? 1 : 0].type);
+    int sinkType = (int)rg_settings_get_number(NS_GLOBAL, SETTING_OUTPUT, sinks[0].type);
     for (size_t i = 0; i < RG_COUNT(sinks); ++i)
     {
         if (!audio.sink || sinks[i].type == sinkType)
@@ -228,14 +230,14 @@ void rg_audio_deinit(void)
     RELEASE_DEVICE();
 }
 
-void rg_audio_submit(const rg_audio_sample_t *samples, size_t count)
+void rg_audio_submit(const rg_audio_frame_t *frames, size_t count)
 {
     const int64_t time_start = rg_system_timer();
 
     if (!audio.sink)
         return;
 
-    if (!samples || !count)
+    if (!frames || !count)
         return;
 
     if (!ACQUIRE_DEVICE(0))
@@ -250,7 +252,7 @@ void rg_audio_submit(const rg_audio_sample_t *samples, size_t count)
     {
     #if RG_AUDIO_USE_INT_DAC || RG_AUDIO_USE_EXT_DAC
         float volume = audio.muted ? 0.f : (audio.volume * 0.01f);
-        rg_audio_sample_t buffer[180];
+        rg_audio_frame_t buffer[180];
         size_t written = 0;
         size_t pos = 0;
 
@@ -259,8 +261,8 @@ void rg_audio_submit(const rg_audio_sample_t *samples, size_t count)
 
         for (size_t i = 0; i < count; ++i)
         {
-            int left = samples[i].left * volume;
-            int right = samples[i].right * volume;
+            int left = frames[i].left * volume;
+            int right = frames[i].right * volume;
 
             if (differential)
             {

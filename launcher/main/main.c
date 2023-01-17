@@ -6,11 +6,23 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef CONFIG_IDF_TARGET
+#include <esp_heap_caps.h>
+#endif
+
 #include "applications.h"
 #include "bookmarks.h"
+#include "music.h"
 #include "gui.h"
 #include "webui.h"
 #include "timezones.h"
+#include "updater.h"
+
+#define MAX_AP_LIST 5
+
+static const char *SETTING_WIFI_SLOT = "slot";
+
+static rg_app_t *app;
 
 static rg_gui_event_t toggle_tab_cb(rg_gui_option_t *option, rg_gui_event_t event)
 {
@@ -28,10 +40,11 @@ static rg_gui_event_t toggle_tabs_cb(rg_gui_option_t *option, rg_gui_event_t eve
     if (event == RG_DIALOG_ENTER)
     {
         rg_gui_option_t options[gui.tabs_count + 1];
+        rg_gui_option_t *opt = options;
 
         for (size_t i = 0; i < gui.tabs_count; ++i)
-            options[i] = (rg_gui_option_t){i, gui.tabs[i]->name, "...", 1, &toggle_tab_cb};
-        options[gui.tabs_count] = (rg_gui_option_t)RG_DIALOG_CHOICE_LAST;
+            *opt++ = (rg_gui_option_t){i, gui.tabs[i]->name, "...", 1, &toggle_tab_cb};
+        *opt++ = (rg_gui_option_t)RG_DIALOG_END;
 
         rg_gui_dialog("Tabs Visibility", options, 0);
         gui_redraw();
@@ -41,21 +54,18 @@ static rg_gui_event_t toggle_tabs_cb(rg_gui_option_t *option, rg_gui_event_t eve
 
 static rg_gui_event_t timezone_cb(rg_gui_option_t *option, rg_gui_event_t event)
 {
-    rg_gui_option_t options[timezones_count + 1];
-
     if (event == RG_DIALOG_ENTER)
     {
+        rg_gui_option_t options[timezones_count + 1];
+        rg_gui_option_t *opt = options;
+
         for (size_t i = 0; i < timezones_count; i++)
-            options[i] = (rg_gui_option_t){i, timezones[i].name, NULL, 1, NULL};
-        options[timezones_count] = (rg_gui_option_t)RG_DIALOG_CHOICE_LAST;
+            *opt++ = (rg_gui_option_t){i, timezones[i].name, NULL, 1, NULL};
+        *opt++ = (rg_gui_option_t)RG_DIALOG_END;
 
         int sel = rg_gui_dialog("Timezone", options, 0);
-        if (sel >= 0 && sel < timezones_count)
-        {
-            rg_settings_set_string(NS_GLOBAL, "Timezone", timezones[sel].TZ);
-            setenv("TZ", timezones[sel].TZ, 1);
-            tzset();
-        }
+        if (sel != RG_DIALOG_CANCELLED)
+            rg_system_set_timezone(timezones[sel].TZ);
         gui_redraw();
     }
 
@@ -101,18 +111,86 @@ static rg_gui_event_t show_preview_cb(rg_gui_option_t *option, rg_gui_event_t ev
     return RG_DIALOG_VOID;
 }
 
-static rg_gui_event_t theme_cb(rg_gui_option_t *option, rg_gui_event_t event)
+static rg_gui_event_t wifi_switch_cb(rg_gui_option_t *option, rg_gui_event_t event)
+{
+    if (event == RG_DIALOG_PREV || event == RG_DIALOG_NEXT) {
+        wifi_set_switch(!wifi_get_switch());
+    }
+    strcpy(option->value, wifi_get_switch() ? "On " : "Off");
+    return RG_DIALOG_VOID;
+}
+
+static rg_gui_event_t wifi_select_cb(rg_gui_option_t *option, rg_gui_event_t event)
 {
     if (event == RG_DIALOG_ENTER)
     {
-        char *path = rg_gui_file_picker("Theme", RG_BASE_PATH_THEMES, NULL);
-        const char *theme = path ? rg_basename(path) : NULL;
-        gui_set_theme(theme);
-        rg_gui_set_theme(theme);
-        free(path);
-    }
+        rg_gui_option_t options[MAX_AP_LIST + 2];
+        rg_gui_option_t *opt = options;
 
-    sprintf(option->value, "%s", gui.theme ?: "Default");
+        for (size_t i = 0; i < MAX_AP_LIST; i++)
+        {
+            char slot[6];
+            sprintf(slot, "ssid%d", i);
+            char *ap_name = rg_settings_get_string(NS_WIFI, slot, NULL);
+            *opt++ = (rg_gui_option_t){i, ap_name ?: "(empty)", NULL, ap_name ? 1 : 0, NULL};
+        }
+        char *ap_name = rg_settings_get_string(NS_WIFI, "ssid", NULL);
+        *opt++ = (rg_gui_option_t){-1, ap_name ?: "(empty)", NULL, ap_name ? 1 : 0, NULL};
+        *opt++ = (rg_gui_option_t)RG_DIALOG_END;
+
+        int sel = rg_gui_dialog("Select saved AP", options, rg_settings_get_number(NS_WIFI, SETTING_WIFI_SLOT, 0));
+        if (sel != RG_DIALOG_CANCELLED)
+        {
+            rg_settings_set_number(NS_WIFI, SETTING_WIFI_SLOT, sel);
+            if (rg_network_wifi_load_config(sel))
+            {
+                rg_network_wifi_stop();
+                rg_network_wifi_start();
+            }
+        }
+        gui_redraw();
+    }
+    return RG_DIALOG_VOID;
+ }
+
+static rg_gui_event_t webui_switch_cb(rg_gui_option_t *option, rg_gui_event_t event)
+{
+    if (event == RG_DIALOG_PREV || event == RG_DIALOG_NEXT) {
+        webui_set_switch(!webui_get_switch());
+    }
+    strcpy(option->value, webui_get_switch() ? "On " : "Off");
+    return RG_DIALOG_VOID;
+}
+
+static rg_gui_event_t wifi_access_point_cb(rg_gui_option_t *option, rg_gui_event_t event)
+{
+    if (event == RG_DIALOG_ENTER)
+    {
+        if (rg_gui_confirm("Wi-Fi AP", "Start access point?\n\nSSID: retro-go\nPassword: retro-go", true))
+        {
+            rg_network_wifi_stop();
+            rg_network_wifi_set_config("retro-go", "retro-go", 6, 1);
+            rg_network_wifi_start();
+        }
+    }
+    return RG_DIALOG_VOID;
+}
+
+static rg_gui_event_t wifi_options_cb(rg_gui_option_t *option, rg_gui_event_t event)
+{
+    if (event == RG_DIALOG_ENTER)
+    {
+        const rg_gui_option_t options[] = {
+            {0, "Wi-Fi"       , "...", 1, &wifi_switch_cb},
+            {0, "Wi-Fi select", "...", 1, &wifi_select_cb},
+            {0, "Wi-Fi Access Point", NULL, 1, &wifi_access_point_cb},
+            RG_DIALOG_SEPARATOR,
+            {0, "File server" , "...", 1, &webui_switch_cb},
+            {0, "Time sync" , "On", 0, NULL},
+            RG_DIALOG_END,
+        };
+        rg_gui_dialog("Wifi Options", options, 0);
+    }
     return RG_DIALOG_VOID;
 }
 
@@ -145,16 +223,35 @@ static rg_gui_event_t startup_app_cb(rg_gui_option_t *option, rg_gui_event_t eve
     return RG_DIALOG_VOID;
 }
 
+static rg_gui_event_t updater_cb(rg_gui_option_t *option, rg_gui_event_t event)
+{
+    if (event == RG_DIALOG_ENTER)
+    {
+        updater_show_dialog();
+        gui_redraw();
+    }
+    return RG_DIALOG_VOID;
+}
+
+static void show_about_menu(void)
+{
+    const rg_gui_option_t options[] = {
+        {0, "Check for updates", NULL, 1, &updater_cb},
+        RG_DIALOG_END,
+    };
+    rg_gui_about_menu(options);
+}
+
 static rg_gui_event_t about_app_cb(rg_gui_option_t *option, rg_gui_event_t event)
 {
     if (event == RG_DIALOG_ENTER)
-        rg_gui_about_menu(NULL);
+        show_about_menu();
     return RG_DIALOG_VOID;
 }
 
 static void retro_loop(void)
 {
-    tab_t *tab = gui_get_current_tab();
+    tab_t *tab = NULL;
     int64_t next_repeat = 0;
     int64_t next_idle_event = 0;
     int repeats = 0;
@@ -163,6 +260,18 @@ static void retro_loop(void)
     int browse_last = -1;
     bool redraw_pending = true;
 
+    gui_init();
+    applications_init();
+    bookmarks_init();
+    music_init();
+
+#ifdef RG_ENABLE_NETWORKING
+    rg_network_init();
+    wifi_set_switch(wifi_get_switch());
+    webui_set_switch(webui_get_switch());
+#endif
+
+    tab = gui_get_current_tab();
     if (!tab)
     {
         gui.selected_tab = 0;
@@ -171,6 +280,19 @@ static void retro_loop(void)
 
     while (true)
     {
+        // At the moment the HTTP server has absolute priority because it may change UI elements.
+        // It's also risky to let the user do file accesses at the same time (thread safety, SPI, etc)...
+        if (gui.http_lock)
+        {
+            rg_gui_draw_dialog("HTTP Server Busy...", NULL, 0);
+            redraw_pending = true;
+            while (gui.http_lock)
+            {
+                rg_task_delay(100);
+                rg_system_tick(0);
+            }
+        }
+
         if (!tab->enabled && !change_tab)
         {
             change_tab = 1;
@@ -224,11 +346,12 @@ static void retro_loop(void)
         {
         #if RG_GAMEPAD_HAS_OPTION_BTN
             if (joystick == RG_KEY_MENU)
-                rg_gui_about_menu(NULL);
+                show_about_menu();
             else
         #endif
             rg_gui_options_menu();
 
+            gui_set_theme(rg_gui_get_theme());
             gui_save_config();
             rg_settings_commit();
             redraw_pending = true;
@@ -290,12 +413,6 @@ static void retro_loop(void)
             gui.idle_counter = 0;
             next_idle_event = rg_system_timer() + 100000;
         }
-        else if (gui.http_lock)
-        {
-            rg_gui_draw_dialog("HTTP Server Busy...", NULL, 0);
-            while (gui.http_lock) // Note: Maybe we should yield on user action, even if risky?
-                usleep(100 * 1000);
-        }
         else if (rg_system_timer() >= next_idle_event)
         {
             gui.idle_counter++;
@@ -309,6 +426,8 @@ static void retro_loop(void)
         {
             usleep(10000);
         }
+
+        rg_system_tick(0);
     }
 }
 
@@ -352,21 +471,23 @@ void app_main(void)
         .event = &event_handler,
     };
     const rg_gui_option_t options[] = {
-        {0, "Theme       ", "...", 1, &theme_cb},
         {0, " - Color    ", "...", 1, &color_theme_cb},
         {0, "Preview     ", "...", 1, &show_preview_cb},
         {0, "Start screen", "...", 1, &start_screen_cb},
         {0, "Hide tabs   ", "...", 1, &toggle_tabs_cb},
         {0, "Startup app ", "...", 1, &startup_app_cb},
         {0, "Timezone    ", "...", 1, &timezone_cb},
+        {0, "Wi-Fi options...", NULL,  1, &wifi_options_cb},
     #if !RG_GAMEPAD_HAS_OPTION_BTN
         RG_DIALOG_SEPARATOR,
         {0, "About Retro-Go", NULL,  1, &about_app_cb},
     #endif
-        RG_DIALOG_CHOICE_LAST
+        RG_DIALOG_END,
     };
 
-    rg_system_init(32000, &handlers, options);
+    app = rg_system_init(32000, &handlers, options);
+    app->configNs = "launcher";
+    app->isLauncher = true;
 
     if (!rg_storage_ready())
     {
@@ -380,15 +501,12 @@ void app_main(void)
         try_migrate();
     }
 
-#ifdef RG_ENABLE_NETWORKING
-    rg_network_init();
-    rg_network_wifi_start(NULL, NULL, 0);
-    webui_start();
+#ifdef CONFIG_IDF_TARGET
+    // The launcher makes a lot of small allocations and it sometimes fills internal RAM, causing the SD Card driver to
+    // stop working. Lowering CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL and manually using rg_alloc to do internal allocs when
+    // needed is a better solution, but that would have to be done for every app. This is a good workaround for now.
+    heap_caps_malloc_extmem_enable(1024);
 #endif
-
-    gui_init();
-    applications_init();
-    bookmarks_init();
 
     retro_loop();
 }

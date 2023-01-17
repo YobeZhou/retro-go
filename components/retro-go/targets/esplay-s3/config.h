@@ -20,7 +20,7 @@
 #define RG_SCREEN_DRIVER            5   // 0 = ILI9341
 #define RG_SCREEN_HOST              SPI2_HOST
 #define RG_SCREEN_SPEED             SPI_MASTER_FREQ_40M
-#define RG_SCREEN_TYPE              5   // 4 = ESPLAY-ST7789V2
+#define RG_SCREEN_TYPE              6   // 4 = ESPLAY-ST7789V2, 6 = 100ASK 320X480 LCD
 #define RG_SCREEN_ROTATE            1   // 0 = 0°, 1 = 90°,2 = 180° 3 = 270°
 #define RG_SCREEN_WIDTH             480
 #define RG_SCREEN_HEIGHT            320
@@ -34,6 +34,7 @@
 #define RG_GAMEPAD_HAS_MENU_BTN     1
 #define RG_GAMEPAD_HAS_OPTION_BTN   1
 // Note: Depending on the driver, the button map can represent bits, registers, keys, or gpios.
+
 #if (RG_GAMEPAD_DRIVER == 3)    // 100ask PCA9555A
     #define RG_GAMEPAD_MAP_UP           (1<<0)
     #define RG_GAMEPAD_MAP_DOWN         (1<<1)
@@ -60,6 +61,21 @@
     //#define RG_GAMEPAD_MAP_MENU         (1<<8)
     //#define RG_GAMEPAD_MAP_OPTION       (1<<11)
 #endif
+
+//#define RG_GAMEPAD_MAP_MENU         (0)
+//#define RG_GAMEPAD_MAP_OPTION       (0)
+//#define RG_GAMEPAD_MAP_START        (1<<0)
+//#define RG_GAMEPAD_MAP_SELECT       (1<<1)
+//#define RG_GAMEPAD_MAP_UP           (1<<2)
+//#define RG_GAMEPAD_MAP_RIGHT        (1<<5)
+//#define RG_GAMEPAD_MAP_DOWN         (1<<3)
+//#define RG_GAMEPAD_MAP_LEFT         (1<<4)
+//#define RG_GAMEPAD_MAP_A            (1<<6)
+//#define RG_GAMEPAD_MAP_B            (1<<7)
+//#define RG_GAMEPAD_MAP_X            (0)
+//#define RG_GAMEPAD_MAP_Y            (0)
+#define RG_GAMEPAD_MAP_L            (0)
+#define RG_GAMEPAD_MAP_R            (0)
 
 
 // Battery

@@ -16,6 +16,12 @@
 static httpd_handle_t server;
 static char *http_buffer;
 
+static bool wifi_state = true;
+static bool webui_state = true;
+
+static const char *SETTING_WEBUI = "HTTPFileServer";
+static const char *SETTING_WIFI = "WiFi";
+
 static char *urldecode(const char *str)
 {
     char *new_string = strdup(str);
@@ -44,9 +50,9 @@ static esp_err_t http_api_handler(httpd_req_t *req)
 
     cJSON *content = cJSON_Parse(http_buffer);
     if (!content)
-       return ESP_FAIL;
+        return ESP_FAIL;
 
-    const char *cmd  = cJSON_GetStringValue(cJSON_GetObjectItem(content, "cmd")) ?: "-";
+    const char *cmd = cJSON_GetStringValue(cJSON_GetObjectItem(content, "cmd")) ?: "-";
     const char *arg1 = cJSON_GetStringValue(cJSON_GetObjectItem(content, "arg1")) ?: "";
     const char *arg2 = cJSON_GetStringValue(cJSON_GetObjectItem(content, "arg2")) ?: "";
 
@@ -63,6 +69,8 @@ static esp_err_t http_api_handler(httpd_req_t *req)
             cJSON *obj = cJSON_CreateObject();
             cJSON_AddStringToObject(obj, "name", entry->name);
             cJSON_AddNumberToObject(obj, "size", entry->size);
+            cJSON_AddNumberToObject(obj, "mtime", entry->mtime);
+            // cJSON_AddBoolToObject(obj, "is_file", entry->is_file);
             cJSON_AddBoolToObject(obj, "is_dir", entry->is_dir);
             cJSON_AddItemToArray(array, obj);
         }
@@ -144,7 +152,8 @@ static esp_err_t http_upload_handler(httpd_req_t *req)
     {
         RG_LOGE("Received %d/%d bytes", received, req->content_len);
         httpd_resp_sendstr(req, "ERROR");
-        return ESP_OK;
+        unlink(filename);
+        return ESP_FAIL;
     }
 
     RG_LOGI("Received %d/%d bytes", received, req->content_len);
@@ -203,6 +212,9 @@ void webui_stop(void)
 
     httpd_stop(server);
     server = NULL;
+
+    free(http_buffer);
+    http_buffer = NULL;
 }
 
 void webui_start(void)
@@ -250,4 +262,35 @@ void webui_start(void)
     RG_LOGI("Web server started");
 }
 
+void wifi_set_switch(bool enable)
+{
+    rg_settings_set_number(NS_APP, SETTING_WIFI, enable);
+    wifi_state = enable;
+
+    if (wifi_state)
+        rg_network_wifi_start();
+    else
+        rg_network_wifi_stop();
+}
+
+bool wifi_get_switch(void)
+{
+    return rg_settings_get_number(NS_APP, SETTING_WIFI, wifi_state);
+}
+
+void webui_set_switch(bool enable)
+{
+    rg_settings_set_number(NS_APP, SETTING_WEBUI, enable);
+    webui_state = enable;
+
+    if (webui_state)
+        webui_start();
+    else
+        webui_stop();
+}
+
+bool webui_get_switch(void)
+{
+    return rg_settings_get_number(NS_APP, SETTING_WEBUI, webui_state);
+}
 #endif

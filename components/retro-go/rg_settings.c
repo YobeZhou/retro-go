@@ -26,7 +26,8 @@ static FILE *open_config_file(const char *name, const char *mode)
 
 static cJSON *json_root(const char *name, bool mode)
 {
-    RG_ASSERT(config_root, "json_root called before settings were initialized!");
+    if (!config_root)
+        return NULL;
 
     if (name == NS_GLOBAL)
         name = "global";
@@ -53,7 +54,15 @@ static cJSON *json_root(const char *name, bool mode)
             fseek(fp, 0, SEEK_SET);
             char *buffer = calloc(1, length + 1);
             if (fread(buffer, 1, length, fp))
-                cJSON_AddItemToObject(branch, "values", cJSON_Parse(buffer));
+            {
+                cJSON *values = cJSON_Parse(buffer);
+                if (!values)
+                {
+                    RG_LOGE("Parse failed in config file '%s'", name);
+                    values = cJSON_CreateObject();
+                }
+                cJSON_AddItemToObject(branch, "values", values);
+            }
             free(buffer);
             fclose(fp);
         }
@@ -68,7 +77,7 @@ static cJSON *json_root(const char *name, bool mode)
 
     if (mode)
     {
-       cJSON_SetNumberHelper(cJSON_GetObjectItem(branch, "changed"), 1);
+        cJSON_SetNumberHelper(cJSON_GetObjectItem(branch, "changed"), 1);
     }
 
     return root;
@@ -127,8 +136,12 @@ void rg_settings_reset(void)
 {
     RG_LOGI("Clearing settings...\n");
     rg_storage_delete(RG_BASE_PATH_CONFIG);
-    cJSON_Delete(config_root);
-    config_root = cJSON_CreateObject();
+    rg_storage_mkdir(RG_BASE_PATH_CONFIG);
+    if (config_root)
+    {
+        cJSON_Delete(config_root);
+        config_root = cJSON_CreateObject();
+    }
 }
 
 double rg_settings_get_number(const char *section, const char *key, double default_value)
