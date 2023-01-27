@@ -123,7 +123,7 @@ void rg_audio_init(int sampleRate)
             .sample_rate = sampleRate,
             .bits_per_sample = 16,
             .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-        #ifdef RG_TARGET_ESPLAY_S3
+        #ifdef RG_TARGET_ESPLAY_S3 || RG_TARGET_YAO_MIO
             .communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
             .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // ESP_INTR_FLAG_LEVEL1
             .dma_buf_count = 8, // Goal is to have ~800 samples over 2-8 buffers (3x270 or 5x180 are pretty good)
