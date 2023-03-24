@@ -228,7 +228,7 @@ static void system_monitor_task(void *arg)
 
         if (rg_input_read_battery(&batteryPercent, NULL))
         {
-            if (batteryPercent < 2)
+            if (batteryPercent < RG_BATTERY_LOW_POWER)
                 rg_system_set_led((ledState ^= 1));
             else if (ledState)
                 rg_system_set_led((ledState = 0));

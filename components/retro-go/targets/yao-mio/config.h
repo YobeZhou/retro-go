@@ -79,10 +79,12 @@
 
 
 // Battery
-#define RG_BATTERY_ADC_CHANNEL      ADC1_CHANNEL_1
-#define RG_BATTERY_CALC_PERCENT(raw) (((raw + 200) - 1500.f) / (2200.f - 1500.f) * 100.f)
-#define RG_BATTERY_CALC_VOLTAGE(raw) ((raw + 200) * 2.f * 0.001f)
-
+#define RG_BATTERY_ADC_CHANNEL          ADC1_CHANNEL_1
+#define RG_BATTERY_CALC_PERCENT(raw)    (((raw) - 1600.f) / (1900.f - 1600.f) * 100.f)
+#define RG_BATTERY_CALC_VOLTAGE(raw)    ((raw + 300) * 2.f * 0.001f)
+#define RG_BATTERY_LOW_POWER            15 /*percent*/   
+#define RG_BATTERY_SAMPLES              64
+   
 // Status LED
 #define RG_GPIO_LED                 GPIO_NUM_21
 

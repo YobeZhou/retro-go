@@ -29,9 +29,9 @@ static inline int battery_read(void)
 #if defined(RG_BATTERY_ADC_CHANNEL)
 
     uint32_t adc_sample = 0;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < RG_BATTERY_SAMPLES; ++i)
         adc_sample += esp_adc_cal_raw_to_voltage(adc1_get_raw(RG_BATTERY_ADC_CHANNEL), &adc_chars);
-    return adc_sample / 4;
+    return adc_sample / RG_BATTERY_SAMPLES;
 
 #elif RG_GAMEPAD_DRIVER == 3 /* I2C */
 
