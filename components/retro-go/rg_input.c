@@ -91,9 +91,9 @@ static inline uint32_t gamepad_read(void)
     RIGHT   128   1000 0000 (1 << 7)
 */
 
-    gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 0);
-    usleep(5);
     gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 1);
+    rg_task_delay(5);
+    gpio_set_level(RG_GPIO_GAMEPAD_LATCH, 0);
     rg_task_delay(5);
 
     uint16_t buttons = 0;
@@ -110,8 +110,8 @@ static inline uint32_t gamepad_read(void)
 
     if (buttons & RG_GAMEPAD_MAP_MENU) state |= RG_KEY_MENU;
     //if (buttons & RG_GAMEPAD_MAP_OPTION) state |= RG_KEY_OPTION;
-    //if (buttons & RG_GAMEPAD_MAP_START) state |= RG_KEY_START;
-    if (buttons & RG_GAMEPAD_MAP_SELECT) state |= RG_KEY_SELECT;
+    if (buttons & RG_GAMEPAD_MAP_START) state |= RG_KEY_START;
+    //if (buttons & RG_GAMEPAD_MAP_SELECT) state |= RG_KEY_SELECT;
     if (buttons & RG_GAMEPAD_MAP_UP) state |= RG_KEY_UP;
     if (buttons & RG_GAMEPAD_MAP_RIGHT) state |= RG_KEY_RIGHT;
     if (buttons & RG_GAMEPAD_MAP_DOWN) state |= RG_KEY_DOWN;
@@ -147,12 +147,14 @@ static inline uint32_t gamepad_read(void)
     NC       p17   32768    1000 0000 0000 0000 (1<<15)
 */
     uint8_t data[2] = {0xFF,0xFF};
-    if (rg_i2c_read(0x20, 0, &data, 2))
-    //if (rg_i2c_read(0x20, -1, &data, 3))
+    if (rg_i2c_read(0x20, 0, data, 2))
     {
+        
         uint16_t buttons = ~(((uint16_t)data[1] << 8) | data[0]);
         //uint32_t buttons = ~((data[2] << 8) | data[1]);
 
+        //RG_LOGI("1111111: data[0]: %d, data[1]:%d, buttons: %d.\n", data[0], data[1], buttons);
+#if 1
         if (buttons & RG_GAMEPAD_MAP_MENU) state |= RG_KEY_MENU;
         if (buttons & RG_GAMEPAD_MAP_OPTION) state |= RG_KEY_OPTION;
         if (buttons & RG_GAMEPAD_MAP_START) state |= RG_KEY_START;
@@ -167,6 +169,7 @@ static inline uint32_t gamepad_read(void)
         if (buttons & RG_GAMEPAD_MAP_Y) state |= RG_KEY_Y;
         if (buttons & RG_GAMEPAD_MAP_L) state |= RG_KEY_L;
         if (buttons & RG_GAMEPAD_MAP_R) state |= RG_KEY_R;
+#endif
     }
 
 #elif RG_GAMEPAD_DRIVER == 4  // I2C via AW9523

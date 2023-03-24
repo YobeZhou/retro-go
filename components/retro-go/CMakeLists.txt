@@ -1,5 +1,5 @@
-set(COMPONENT_SRCDIRS ". fonts libs/netplay libs/lodepng")
-set(COMPONENT_ADD_INCLUDEDIRS ". libs/netplay libs/lodepng")
+set(COMPONENT_SRCDIRS ". fonts libs/netplay libs/lodepng libs/es8311")
+set(COMPONENT_ADD_INCLUDEDIRS ". libs/netplay libs/lodepng libs/es8311")
 if($ENV{RG_ENABLE_NETWORKING})
     set(COMPONENT_REQUIRES "spi_flash fatfs nvs_flash esp_http_client app_update esp_adc_cal esp32 json")
 else()

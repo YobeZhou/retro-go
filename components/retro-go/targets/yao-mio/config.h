@@ -35,7 +35,7 @@
 #define RG_GAMEPAD_HAS_OPTION_BTN   1
 // Note: Depending on the driver, the button map can represent bits, registers, keys, or gpios.
 
-#if (RG_GAMEPAD_DRIVER == 3)    // 100ask PCA9555A
+#if (RG_GAMEPAD_DRIVER == 3)    // 100ask i2c I/O expanders
     #define RG_GAMEPAD_MAP_UP           (1<<0)
     #define RG_GAMEPAD_MAP_DOWN         (1<<1)
     #define RG_GAMEPAD_MAP_LEFT         (1<<2)
@@ -51,9 +51,9 @@
 #elif (RG_GAMEPAD_DRIVER == 2)  // 100ask fc joypad
     #define RG_GAMEPAD_MAP_A            (1<<0)
     #define RG_GAMEPAD_MAP_B            (1<<1)
-    #define RG_GAMEPAD_MAP_SELECT       (1<<2)
-    //#define RG_GAMEPAD_MAP_START        (1<<3)
-    #define RG_GAMEPAD_MAP_MENU         (1<<3)
+    //#define RG_GAMEPAD_MAP_SELECT       (1<<2)
+    #define RG_GAMEPAD_MAP_MENU         (1<<2)
+    #define RG_GAMEPAD_MAP_START        (1<<3)
     #define RG_GAMEPAD_MAP_UP           (1<<4)
     #define RG_GAMEPAD_MAP_DOWN         (1<<5)
     #define RG_GAMEPAD_MAP_LEFT         (1<<6)
@@ -80,17 +80,19 @@
 
 // Battery
 #define RG_BATTERY_ADC_CHANNEL      ADC1_CHANNEL_1
-#define RG_BATTERY_CALC_PERCENT(raw) (((raw) * 2.f - 3500.f) / (4200.f - 3500.f) * 100.f)
-#define RG_BATTERY_CALC_VOLTAGE(raw) ((raw) * 2.f * 0.001f)
+#define RG_BATTERY_CALC_PERCENT(raw) (((raw + 200) - 1500.f) / (2200.f - 1500.f) * 100.f)
+#define RG_BATTERY_CALC_VOLTAGE(raw) ((raw + 200) * 2.f * 0.001f)
 
 // Status LED
 #define RG_GPIO_LED                 GPIO_NUM_21
 
 // I2C BUS
-#if (RG_GAMEPAD_DRIVER == 3)
+#if (RG_GAMEPAD_DRIVER == 3 || RG_AUDIO_USE_EXT_DAC == 1)
     #define RG_GPIO_I2C_SDA             GPIO_NUM_17
     #define RG_GPIO_I2C_SCL             GPIO_NUM_18
-#elif(RG_GAMEPAD_DRIVER == 2)
+#endif
+
+#if(RG_GAMEPAD_DRIVER == 2)
     // SNES-style gamepad
     #define RG_GPIO_GAMEPAD_LATCH       GPIO_NUM_41 /*D+*/
     #define RG_GPIO_GAMEPAD_CLOCK       GPIO_NUM_40 /*ID*/

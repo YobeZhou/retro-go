@@ -485,7 +485,8 @@ void app_main(void)
         RG_DIALOG_END,
     };
 
-    app = rg_system_init(32000, &handlers, options);
+    //app = rg_system_init(32000, &handlers, options);
+    app = rg_system_init(22050, &handlers, options);
     app->configNs = "launcher";
     app->isLauncher = true;
 
