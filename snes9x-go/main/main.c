@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
 #include <math.h>
 
@@ -76,7 +75,7 @@ static rg_gui_event_t apu_toggle_cb(rg_gui_option_t *option, rg_gui_event_t even
         rg_settings_set_number(NS_APP, SETTING_APU_EMULATION, apu_enabled);
     }
 
-    sprintf(option->value, "%s", apu_enabled ? "On " : "Off");
+    strcpy(option->value, apu_enabled ? "On " : "Off");
 
     return RG_DIALOG_VOID;
 }
@@ -100,7 +99,7 @@ static rg_gui_event_t lowpass_filter_cb(rg_gui_option_t *option, rg_gui_event_t 
     if (event == RG_DIALOG_PREV || event == RG_DIALOG_NEXT)
         lowpass_filter = !lowpass_filter;
 
-    sprintf(option->value, "%s", lowpass_filter ? "On" : "Off");
+    strcpy(option->value, lowpass_filter ? "On" : "Off");
 
     return RG_DIALOG_VOID;
 }
@@ -269,8 +268,8 @@ void app_main(void)
         .screenshot = &screenshot_handler,
     };
     const rg_gui_option_t options[] = {
-        {2, "APU enable", (char *)"", 1, &apu_toggle_cb},
-        {2, "LP Filter", (char*)"", 1, &lowpass_filter_cb},
+        {2, "Audio enable", (char *)"", 1, &apu_toggle_cb},
+        {2, "Audio filter", (char*)"", 1, &lowpass_filter_cb},
         {2, "Frameskip", (char *)"", 1, &frameskip_cb},
         {2, "Controls", (char *)"", 1, &menu_keymap_cb},
         RG_DIALOG_CHOICE_LAST,
@@ -343,7 +342,7 @@ void app_main(void)
         {
             if (!menuCancelled)
             {
-                usleep(50 * 1000);
+                rg_task_delay(50);
                 rg_gui_game_menu();
                 rg_audio_set_sample_rate(app->sampleRate * app->speed);
             }
@@ -366,13 +365,6 @@ void app_main(void)
 
         IPPU.RenderThisFrame = (frames++ % frameskip) == 0;
         GFX.Screen = currentUpdate->buffer;
-
-    #ifndef USE_BLARGG_APU
-        // Fully disabling the APU isn't possible at this point.
-        if (!apu_enabled)
-            Settings.APUEnabled = false, IAPU.APUExecuting = false;
-    #endif
-
         S9xMainLoop();
 
         if (IPPU.RenderThisFrame)

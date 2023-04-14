@@ -10,8 +10,8 @@
 #include "targets/sdl2/config.h"
 #elif defined(RG_TARGET_MRGC_GBM)
 #include "targets/mrgc-gbm/config.h"
-#elif defined(RG_TARGET_ESPLAY_S3)
-#include "targets/esplay-s3/config.h"
+#elif defined(RG_TARGET_ESPLAY_MICRO)
+#include "targets/esplay-micro/config.h"
 #elif defined(RG_TARGET_YAO_MIO)
 #include "targets/yao-mio/config.h"
 #else
@@ -69,4 +69,8 @@
 
 #ifndef RG_GPIO_LED
 #define RG_GPIO_LED (-1)
+#endif
+
+#ifndef RG_GAMEPAD_MAP
+#define RG_GAMEPAD_MAP {}
 #endif

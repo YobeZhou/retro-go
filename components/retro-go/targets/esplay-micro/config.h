@@ -1,24 +1,21 @@
-// REF: https://www.myretrogamecase.com/products/game-mini-esp32
-// Original firmware source code: GBA ESP32 link on https://www.myretrogamecase.com/pages/retro-handheld-gaming-firmware
-// Source code is in the "esplay-base-firmware" directory of the .rar archive in the above link.
+// REF: https://www.makerfabs.com/esplay-micro-v2.html
+// This port developed for the Micro V2 listed above. Compatibility with the elusive V1 is unknown.
 
-// Note: As of Late 2022, the owner of this shop has vanished from the net. Orders may not be fulfilled.
-
-// Known issues:
-// Battery meter needs to be configured.
-// Cropping most noticeable on NES, SNES, Genesis, PC Engine.
-// Scaling option for above should eventually be removed or changed if downscaling is added.
-// Disk LED does nothing (or isn't mapped yet) and should be removed for this target.
-// Sometimes takes more than one attempt to flash. (Stock bootloader problem? Hardware?)
-// Would benefit from a custom theme for small screens.
-
+// WORK IN PROGRESS!
+// Issues: Menu, L, and R aren't properly mapped yet. Menu and Select are both mapped to Select for now.
+// Battery meter isn't working yet.
 
 // Parts:
-// Unknown ESP-32 (Most likely ESP32-WROVER-B) (SOC)
-
+// - ESP32-WROVER-B (SoC 16MB Flash + 8MB PSRAM)
+// - PCF8574 I2C GPIO (To connect the extra buttons)
+// - UDA1334A (I2S DAC)
+// - YT240L010 (ILI9341 LCD)
+// - TP4054 (Lipo Charger IC)
+// - CH340C (USB to Serial)
+// - 3.5mm Headphone jack 0_o
 
 // Target definition
-#define RG_TARGET_NAME             "MRGC-GBM"
+#define RG_TARGET_NAME             "ESPLAY-MICRO"
 
 // Storage
 #define RG_STORAGE_DRIVER           2                   // 0 = Host, 1 = SDSPI, 2 = SDMMC, 3 = USB, 4 = Flash
@@ -34,46 +31,53 @@
 #define RG_SCREEN_DRIVER            0   // 0 = ILI9341
 #define RG_SCREEN_HOST              SPI2_HOST
 #define RG_SCREEN_SPEED             SPI_MASTER_FREQ_40M
-#define RG_SCREEN_TYPE              5   // Game Box Mini 240x192 screen
-#define RG_SCREEN_WIDTH             240
-#define RG_SCREEN_HEIGHT            230 // Display height 192 plus margin? Was 232
+#define RG_SCREEN_TYPE              6
+#define RG_SCREEN_WIDTH             320
+#define RG_SCREEN_HEIGHT            240
 #define RG_SCREEN_ROTATE            0
-#define RG_SCREEN_MARGIN_TOP        38
-#define RG_SCREEN_MARGIN_BOTTOM     2  // Too little gives you garbage under the bottom bezel.
+#define RG_SCREEN_MARGIN_TOP        0
+#define RG_SCREEN_MARGIN_BOTTOM     0
 #define RG_SCREEN_MARGIN_LEFT       0
 #define RG_SCREEN_MARGIN_RIGHT      0
 
 // Input
 #define RG_GAMEPAD_DRIVER           3   // 1 = ODROID-GO, 2 = Serial, 3 = I2C, 4 = AW9523, 5 = ESPLAY-S3, 6 = SDL2
 #define RG_GAMEPAD_HAS_MENU_BTN     1
-#define RG_GAMEPAD_HAS_OPTION_BTN   0   // The power button does not seem to be mappable.
-/**
- * The Stock firmware, left to right is:    Start,  Select, Menu,   Power
- * With the plastic shell, the buttons are: S/P,    Reset,  Sound,  On/Off
- * Left to right, these buttons are:        (1<<0), (1<<1), (1<<8), null?
- */
+#define RG_GAMEPAD_HAS_OPTION_BTN   0
+
 // Note: Depending on the driver, the button map can be a bitmask, an index, or a GPIO.
 // Refer to rg_input.h to see all available RG_KEY_*
+// A and B silkscreen on the board are swapped relative to standard Nintendo layout
+// Temporarily shared mapping between Menu and Select until Menu mapping is found.
 #define RG_GAMEPAD_MAP {\
     {RG_KEY_UP,     (1<<2)},\
     {RG_KEY_RIGHT,  (1<<5)},\
     {RG_KEY_DOWN,   (1<<3)},\
     {RG_KEY_LEFT,   (1<<4)},\
-    {RG_KEY_SELECT, (1<<0)},\
-    {RG_KEY_START,  (1<<1)},\
-    {RG_KEY_MENU,   (1<<8)},\
-    {RG_KEY_A,      (1<<6)},\
-    {RG_KEY_B,      (1<<7)},\
+    {RG_KEY_SELECT, (1<<1)},\
+    {RG_KEY_START,  (1<<8)},\
+    {RG_KEY_MENU,   (1<<1)},\
+    {RG_KEY_A,      (1<<7)},\
+    {RG_KEY_B,      (1<<6)},\
 }
 
+// Experimental. Caused "Menu" to be mapped to a D-pad direction.
+//#define RG_GPIO_GAMEPAD_X           GPIO_NUM_NC
+//#define RG_GPIO_GAMEPAD_Y           GPIO_NUM_NC
+//#define RG_GPIO_GAMEPAD_SELECT      GPIO_NUM_0
+//#define RG_GPIO_GAMEPAD_START       GPIO_NUM_36
+//#define RG_GPIO_GAMEPAD_A           GPIO_NUM_32
+//#define RG_GPIO_GAMEPAD_B           GPIO_NUM_33
+//#define RG_GPIO_GAMEPAD_MENU        GPIO_NUM_35
+//#define RG_GPIO_GAMEPAD_OPTION      GPIO_NUM_NC
+
 // Battery
-// #define RG_BATTERY_ADC_CHANNEL      ADC1_CHANNEL_0 // Default 0, commented out.
+// #define RG_BATTERY_ADC_CHANNEL      ADC1_CHANNEL_3
 #define RG_BATTERY_CALC_PERCENT(raw) (((raw) - 170) / 30.f * 100.f)
 #define RG_BATTERY_CALC_VOLTAGE(raw) (0)
 
 // Status LED
-// #define RG_GPIO_LED                 GPIO_NUM_NC
-// #define RG_GPIO_LED                 GPIO_NUM_13 // From OG Firmware
+#define RG_GPIO_LED                 GPIO_NUM_13 // Causes the "power" LED to blink on disk access.
 
 // I2C BUS
 #define RG_GPIO_I2C_SDA             GPIO_NUM_21

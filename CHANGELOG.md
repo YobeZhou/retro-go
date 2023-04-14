@@ -1,3 +1,13 @@
+# Retro-Go 1.38.1 (2023-04-02)
+- GBC: Added switch to disable RTC sync with system time
+- Launcher: Fixed crash when files without extensions were present
+
+
+# Retro-Go 1.38 (2023-03-28)
+- GBC: Added support for MBC30 (For Pokemon Crystal romhacks)
+- Launcher: Added a new scroll behavior (Options -> Scroll mode)
+
+
 # Retro-Go 1.37 (2022-12-30)
 - SNES: Fixed controls menu labels
 - GEN: Small performance improvement

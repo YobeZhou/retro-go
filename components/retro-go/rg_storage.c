@@ -14,7 +14,7 @@
 #include <esp_vfs_fat.h>
 #endif
 
-#if defined(__MINGW32__) || defined(__MINGW64__)
+#if defined(_WIN32) || defined(_WIN64)
 #define mkdir(A, B) mkdir(A)
 #endif
 
@@ -72,33 +72,44 @@ void rg_storage_init(void)
 #elif RG_STORAGE_DRIVER == 1 // SDSPI
 
     sdmmc_host_t host_config = SDSPI_HOST_DEFAULT();
-    host_config.flags = SDMMC_HOST_FLAG_SPI;
-    host_config.do_transaction = &sdcard_do_transaction;
-    // These are for esp-idf 4.2 compatibility
-    host_config.init = &sdspi_host_init;
-    host_config.deinit = &sdspi_host_deinit;
-#ifdef RG_STORAGE_HOST
     host_config.slot = RG_STORAGE_HOST;
-#endif
-#ifdef RG_STORAGE_SPEED
     host_config.max_freq_khz = RG_STORAGE_SPEED;
-#endif
+    host_config.do_transaction = &sdcard_do_transaction;
+    esp_err_t err;
 
+// Starting with 4.2.0 we have to initialize the SPI bus ourselves
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
+    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+    slot_config.host_id = RG_STORAGE_HOST;
+    slot_config.gpio_cs = RG_GPIO_SDSPI_CS;
+    spi_bus_config_t bus_cfg = {
+        .mosi_io_num = RG_GPIO_SDSPI_MOSI,
+        .miso_io_num = RG_GPIO_SDSPI_MISO,
+        .sclk_io_num = RG_GPIO_SDSPI_CLK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+    };
+    err = spi_bus_initialize(RG_STORAGE_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
+    if (err != ESP_OK) // check but do not abort, let esp_vfs_fat_sdspi_mount decide
+        RG_LOGE("SPI bus init failed (0x%x)\n", err);
+#else
     sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_miso = RG_GPIO_SDSPI_MISO;
     slot_config.gpio_mosi = RG_GPIO_SDSPI_MOSI;
     slot_config.gpio_sck = RG_GPIO_SDSPI_CLK;
     slot_config.gpio_cs = RG_GPIO_SDSPI_CS;
-    slot_config.dma_channel = SPI_DMA_CH_AUTO;
+    slot_config.dma_channel = 1;
+    #define esp_vfs_fat_sdspi_mount esp_vfs_fat_sdmmc_mount
+#endif
 
     esp_vfs_fat_mount_config_t mount_config = {.max_files = 8};
 
-    esp_err_t err = esp_vfs_fat_sdmmc_mount(RG_STORAGE_ROOT, &host_config, &slot_config, &mount_config, NULL);
+    err = esp_vfs_fat_sdspi_mount(RG_STORAGE_ROOT, &host_config, &slot_config, &mount_config, NULL);
     if (err == ESP_ERR_TIMEOUT || err == ESP_ERR_INVALID_RESPONSE || err == ESP_ERR_INVALID_CRC)
     {
         RG_LOGW("SD Card mounting failed (0x%x), retrying at lower speed...\n", err);
         host_config.max_freq_khz = SDMMC_FREQ_PROBING;
-        err = esp_vfs_fat_sdmmc_mount(RG_STORAGE_ROOT, &host_config, &slot_config, &mount_config, NULL);
+        err = esp_vfs_fat_sdspi_mount(RG_STORAGE_ROOT, &host_config, &slot_config, &mount_config, NULL);
     }
     error_code = err;
 
@@ -106,13 +117,9 @@ void rg_storage_init(void)
 
     sdmmc_host_t host_config = SDMMC_HOST_DEFAULT();
     host_config.flags = SDMMC_HOST_FLAG_1BIT;
-    host_config.do_transaction = &sdcard_do_transaction;
-#ifdef RG_STORAGE_HOST
     host_config.slot = RG_STORAGE_HOST;
-#endif
-#ifdef RG_STORAGE_SPEED
     host_config.max_freq_khz = RG_STORAGE_SPEED;
-#endif
+    host_config.do_transaction = &sdcard_do_transaction;
 
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
     slot_config.width = 1;
@@ -195,64 +202,49 @@ bool rg_storage_mkdir(const char *dir)
 {
     RG_ASSERT(dir, "Bad param");
 
-    char temp[RG_PATH_MAX + 1];
-    int ret = mkdir(dir, 0777);
+    if (mkdir(dir, 0777) == 0)
+        return true;
 
-    if (ret == -1)
+    // FIXME: Might want to stat to see if it's a dir
+    if (errno == EEXIST)
+        return true;
+
+    // Possibly missing some parents, try creating them
+    char *temp = strdup(dir);
+    for (char *p = temp + strlen(RG_STORAGE_ROOT) + 1; *p; p++)
     {
-        if (errno == EEXIST)
-            return true;
-
-        strncpy(temp, dir, RG_PATH_MAX);
-
-        for (char *p = temp + strlen(RG_STORAGE_ROOT) + 1; *p; p++)
+        if (*p == '/')
         {
-            if (*p == '/')
+            *p = 0;
+            if (strlen(temp) > 0)
             {
-                *p = 0;
-                if (strlen(temp) > 0)
-                {
-                    RG_LOGI("Creating %s\n", temp);
-                    mkdir(temp, 0777);
-                }
-                *p = '/';
-                while (*(p + 1) == '/')
-                    p++;
+                mkdir(temp, 0777);
             }
+            *p = '/';
+            while (*(p + 1) == '/')
+                p++;
         }
-
-        ret = mkdir(temp, 0777);
     }
+    free(temp);
 
-    if (ret == 0)
-    {
-        RG_LOGI("Folder created %s\n", dir);
-    }
+    // Finally try again
+    if (mkdir(dir, 0777) == 0)
+        return true;
 
-    return (ret == 0);
+    return false;
 }
 
 bool rg_storage_delete(const char *path)
 {
     RG_ASSERT(path, "Bad param");
-    DIR *dir;
 
-    if (unlink(path) == 0)
-    {
-        RG_LOGI("Deleted file %s\n", path);
+    // errno has proven to be somewhat unreliable across our targets
+    // let's use a bruteforce approach...
+    if (unlink(path) == 0 || rmdir(path) == 0)
         return true;
-    }
-    else if (errno == ENOENT)
-    {
-        // The path already doesn't exist!
-        return true;
-    }
-    else if (rmdir(path) == 0)
-    {
-        RG_LOGI("Deleted empty folder %s\n", path);
-        return true;
-    }
-    else if ((dir = opendir(path)))
+
+    DIR *dir = opendir(path);
+    if (dir)
     {
         char pathbuf[128]; // Smaller than RG_PATH_MAX to prevent issues due to lazy recursion...
         struct dirent *ent;
@@ -260,15 +252,12 @@ bool rg_storage_delete(const char *path)
         {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                 continue;
-            snprintf(pathbuf, sizeof(pathbuf), "%s/%s", path, ent->d_name);
+            if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", path, ent->d_name) > sizeof(pathbuf))
+                continue; // path truncated or error, don't do anything...
             rg_storage_delete(pathbuf);
         }
         closedir(dir);
-        if (rmdir(path) == 0)
-        {
-            RG_LOGI("Deleted folder %s\n", path);
-            return true;
-        }
+        return rmdir(path) == 0;
     }
 
     return false;

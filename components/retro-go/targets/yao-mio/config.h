@@ -20,7 +20,7 @@
 #define RG_SCREEN_DRIVER            5   // 0 = ILI9341
 #define RG_SCREEN_HOST              SPI2_HOST
 #define RG_SCREEN_SPEED             SPI_MASTER_FREQ_40M
-#define RG_SCREEN_TYPE              6   // 4 = ESPLAY-ST7789V2, 6 = 100ASK 320X480 LCD
+#define RG_SCREEN_TYPE              7   // 4 = ESPLAY-ST7789V2, 7 = 100ASK 320X480 LCD
 #define RG_SCREEN_ROTATE            1   // 0 = 0°, 1 = 90°,2 = 180° 3 = 270°
 #define RG_SCREEN_WIDTH             480
 #define RG_SCREEN_HEIGHT            320
@@ -33,49 +33,24 @@
 #define RG_GAMEPAD_DRIVER           3   // 1 = ODROID-GO, 2 = Serial, 3 = I2C
 #define RG_GAMEPAD_HAS_MENU_BTN     1
 #define RG_GAMEPAD_HAS_OPTION_BTN   1
-// Note: Depending on the driver, the button map can represent bits, registers, keys, or gpios.
-
-#if (RG_GAMEPAD_DRIVER == 3)    // 100ask i2c I/O expanders
-    #define RG_GAMEPAD_MAP_UP           (1<<0)
-    #define RG_GAMEPAD_MAP_DOWN         (1<<1)
-    #define RG_GAMEPAD_MAP_LEFT         (1<<2)
-    #define RG_GAMEPAD_MAP_RIGHT        (1<<3)
-    #define RG_GAMEPAD_MAP_A            (1<<4)
-    #define RG_GAMEPAD_MAP_B            (1<<5)
-    #define RG_GAMEPAD_MAP_X            (1<<6)
-    #define RG_GAMEPAD_MAP_Y            (1<<7)
-    #define RG_GAMEPAD_MAP_START        (1<<8)
-    #define RG_GAMEPAD_MAP_SELECT       (1<<9)
-    #define RG_GAMEPAD_MAP_MENU         (1<<10)
-    #define RG_GAMEPAD_MAP_OPTION       (1<<11)
-#elif (RG_GAMEPAD_DRIVER == 2)  // 100ask fc joypad
-    #define RG_GAMEPAD_MAP_A            (1<<0)
-    #define RG_GAMEPAD_MAP_B            (1<<1)
-    //#define RG_GAMEPAD_MAP_SELECT       (1<<2)
-    #define RG_GAMEPAD_MAP_MENU         (1<<2)
-    #define RG_GAMEPAD_MAP_START        (1<<3)
-    #define RG_GAMEPAD_MAP_UP           (1<<4)
-    #define RG_GAMEPAD_MAP_DOWN         (1<<5)
-    #define RG_GAMEPAD_MAP_LEFT         (1<<6)
-    #define RG_GAMEPAD_MAP_RIGHT        (1<<7)
-    //#define RG_GAMEPAD_MAP_MENU         (1<<8)
-    //#define RG_GAMEPAD_MAP_OPTION       (1<<11)
-#endif
-
-//#define RG_GAMEPAD_MAP_MENU         (0)
-//#define RG_GAMEPAD_MAP_OPTION       (0)
-//#define RG_GAMEPAD_MAP_START        (1<<0)
-//#define RG_GAMEPAD_MAP_SELECT       (1<<1)
-//#define RG_GAMEPAD_MAP_UP           (1<<2)
-//#define RG_GAMEPAD_MAP_RIGHT        (1<<5)
-//#define RG_GAMEPAD_MAP_DOWN         (1<<3)
-//#define RG_GAMEPAD_MAP_LEFT         (1<<4)
-//#define RG_GAMEPAD_MAP_A            (1<<6)
-//#define RG_GAMEPAD_MAP_B            (1<<7)
-//#define RG_GAMEPAD_MAP_X            (0)
-//#define RG_GAMEPAD_MAP_Y            (0)
-#define RG_GAMEPAD_MAP_L            (0)
-#define RG_GAMEPAD_MAP_R            (0)
+// Note: Depending on the driver, the button map can be a bitmask, an index, or a GPIO.
+// Refer to rg_input.h to see all available RG_KEY_*
+#define RG_GAMEPAD_MAP {\
+    {RG_KEY_UP,     RG_GAMEPAD_MAP_UP},\
+    {RG_KEY_RIGHT,  RG_GAMEPAD_MAP_RIGHT},\
+    {RG_KEY_DOWN,   RG_GAMEPAD_MAP_DOWN},\
+    {RG_KEY_LEFT,   RG_GAMEPAD_MAP_LEFT},\
+    {RG_KEY_SELECT, RG_GAMEPAD_MAP_SELECT},\
+    {RG_KEY_START,  RG_GAMEPAD_MAP_START},\
+    {RG_KEY_MENU,   RG_GAMEPAD_MAP_MENU},\
+    {RG_KEY_OPTION, RG_GAMEPAD_MAP_OPTION},\
+    {RG_KEY_A,      RG_GAMEPAD_MAP_A},\
+    {RG_KEY_B,      RG_GAMEPAD_MAP_B},\
+    {RG_KEY_X,      RG_GAMEPAD_MAP_X},\
+    {RG_KEY_Y,      RG_GAMEPAD_MAP_Y},\
+    {RG_KEY_L,      RG_GAMEPAD_MAP_L},\
+    {RG_KEY_R,      RG_GAMEPAD_MAP_R},\
+}
 
 
 // Battery
@@ -102,10 +77,36 @@
 #endif
 
 // Built-in gamepad
-//#define RG_GPIO_GAMEPAD_L           GPIO_NUM_40
-//#define RG_GPIO_GAMEPAD_R           GPIO_NUM_41
-//#define RG_GPIO_GAMEPAD_MENU        GPIO_NUM_42
-//#define RG_GPIO_GAMEPAD_OPTION      GPIO_NUM_41
+#if (RG_GAMEPAD_DRIVER == 3)    // 100ask i2c I/O expanders
+    #define RG_GAMEPAD_MAP_UP           (1<<0)
+    #define RG_GAMEPAD_MAP_DOWN         (1<<1)
+    #define RG_GAMEPAD_MAP_LEFT         (1<<2)
+    #define RG_GAMEPAD_MAP_RIGHT        (1<<3)
+    #define RG_GAMEPAD_MAP_A            (1<<4)
+    #define RG_GAMEPAD_MAP_B            (1<<5)
+    #define RG_GAMEPAD_MAP_X            (1<<6)
+    #define RG_GAMEPAD_MAP_Y            (1<<7)
+    #define RG_GAMEPAD_MAP_START        (1<<8)
+    #define RG_GAMEPAD_MAP_SELECT       (1<<9)
+    #define RG_GAMEPAD_MAP_MENU         (1<<10)
+    #define RG_GAMEPAD_MAP_OPTION       (1<<11)
+    #define RG_GAMEPAD_MAP_L            (1<<12)
+    #define RG_GAMEPAD_MAP_R            (1<<13)
+#elif (RG_GAMEPAD_DRIVER == 2)  // 100ask fc joypad
+    #define RG_GAMEPAD_MAP_A            (1<<0)
+    #define RG_GAMEPAD_MAP_B            (1<<1)
+    //#define RG_GAMEPAD_MAP_SELECT       (1<<2)
+    #define RG_GAMEPAD_MAP_MENU         (1<<2)
+    #define RG_GAMEPAD_MAP_START        (1<<3)
+    #define RG_GAMEPAD_MAP_UP           (1<<4)
+    #define RG_GAMEPAD_MAP_DOWN         (1<<5)
+    #define RG_GAMEPAD_MAP_LEFT         (1<<6)
+    #define RG_GAMEPAD_MAP_RIGHT        (1<<7)
+    //#define RG_GAMEPAD_MAP_MENU         (1<<8)
+    //#define RG_GAMEPAD_MAP_OPTION       (1<<11)
+    //#define RG_GAMEPAD_MAP_L            (0)
+    //#define RG_GAMEPAD_MAP_R            (0)
+#endif
 
 
 // SPI Display
